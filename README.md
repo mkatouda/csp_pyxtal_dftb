@@ -19,12 +19,14 @@ Crytal structure prediction using PyXtal and DFTB+
 15. [importlib-metadata] (https://anaconda.org/conda-forge/importlib-metadata)
 
 ## Optional
-1.  [xTB]                (https://anaconda.org/conda-forge/xtb)
-2.  [xtb-python]         (https://anaconda.org/conda-forge/xtb-python)
+1.  [Critic2]            (https://aoterodelaroza.github.io/critic2/)
+2.  [xTB]                (https://anaconda.org/conda-forge/xtb)
+3.  [xtb-python]         (https://anaconda.org/conda-forge/xtb-python)
 
 
 ## Installation of python envriromntent for csp_pyxtal_dftb
 1. Install anaconda3 or miniconda3
+
 2. Creaate python 3.8 virtual environment
    $ conda create -n py38-csp python=3.8  
    $ conda activate py38-csp  
@@ -32,19 +34,26 @@ Crytal structure prediction using PyXtal and DFTB+
    $ conda install -c conda-forge rdkit==2020.09.5  
    $ pip install --upgrade --user ase  
    $ pip install pyxtal  
+
 3. Install DFTB+ following DFTB+ Recipes> Introduction (https://dftbplus-recipes.readthedocs.io/en/latest/introduction.html#before-you-start)
 
-
-## How to run LAQA confopt job
+## How to run csp_pyxtal sample job
 
 ### Crystal prediction of benzene
 1. Move working dirctory
    $ cd ./tests/benzene  
-2. Set environmental variables for DFTB+ code (bash or ksh cases).
-   $ export ASE_DFTB_COMMAND="/path/to/dftb+/dftb+ > PREFIX.out"  
-   $ export DFTB_PREFIX=/path/to/slakos/origin/3ob-3-1  
-   $ export OMP_NUM_THREADS=8  
-   $ export OMP_STACKSIZE=2GB  
-   
-3. Run python script csp_pyxtal_dftb.py with input yaml file
-   $ python /path/to/csp_pyxtal_dftb/csp_pyxtal_dftb/csp_pyxtal_dftb.py benzene.yaml  
+
+2. Modify environmental variables in job script file
+   $ vi benzene.sh  
+#### Modify Intel Compiler environment configuraiton used for building DFTB+ code
+   . /path/to/your/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64  
+#### Modify conda environment configuraiton
+   . /path/to/miniconda3/etc/profile.d/conda.sh  
+#### Modify csp_pyxtal_dftb install PATH
+   export CSP_PYXTAL_DFTB_PREFIX=/path/to/csp_pyxtal_dftb/csp_pyxtal_dftb  
+#### Modify environmental variables for ASE DFTB+ calcurator in job script file benzene.sh  
+   export ASE_DFTB_COMMAND="/path/to/dftb+/dftb+ > PREFIX.out"  
+   export DFTB_PREFIX=/path/to/slakos/origin/3ob-3-1  
+
+3. Run python script csp_pyxtal_dftb.py with input yaml file (benzene.yaml)
+   $ bash ./benzene.sh
