@@ -1,0 +1,17 @@
+basename: aspirin
+mols : ['/home/usr4/q70204a/csp_pyxtal_dftb/tests/aspirin/aspirin.xyz']
+nmols: [4]
+spg: 14
+diag: false
+
+symprec: 0.1
+
+nstruc: 20
+factor: 1.1
+tfactor: 1.0
+
+qc_method: DFTB
+opt_method: LBFGS
+opt_fmax: 0.1
+opt_maxcycle: 30
+opt_maxstepsize: 0.01
