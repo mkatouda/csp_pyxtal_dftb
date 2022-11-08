@@ -3,7 +3,7 @@ import shutil
 from time import time
 import pandas as pd
 from pyxtal import pyxtal
-from crys_geom_opt import get_ase_calculator, crys_geom_opt
+from .crys_geom_opt import get_ase_calculator, crys_geom_opt
 from ase.io import read, write
 
 

@@ -2,25 +2,33 @@ import os
 import argparse
 import yaml
 from time import time
-from gen_random_molcrys import gen_random_molcrys
-from opt_molcrys import opt_molcrys
+from .gen_random_molcrys import gen_random_molcrys
+from .opt_molcrys import opt_molcrys
 
 
 def get_parser():
+    class customHelpFormatter(argparse.ArgumentDefaultsHelpFormatter,
+                              argparse.RawTextHelpFormatter):
+        pass
+
     parser = argparse.ArgumentParser(
-        description='PyXtal DFTB crystal structure prediction code',
-        usage=f"python {os.path.basename(__file__)} -c CONFIG_FILE"
+        formatter_class=customHelpFormatter,
+        description='PyXtal DFTB crystal structure prediction code'
     )
     parser.add_argument(
-        "-c", "--config", type=str, #required=True,
-        help="path to a config file"
+        '-c', '--config', type=str, #required=True,
+        help = "yaml style input file, overwriting argument values"
     )
     parser.add_argument(
-        "-d", "--debug", action='store_true',
-        help="debug mode"
+        '-d', '--debug', action='store_true',
+        help = "debug mode"
     )
-    parser.add_argument('-nogen', action='store_false')
-    parser.add_argument('-noopt', action='store_false')
+    parser.add_argument(
+        '-nogen', action='store_false'
+    )
+    parser.add_argument(
+        '-noopt', action='store_false'
+    )
     #parser.add_argument('-nstruc', type=int, default=100)
     #parser.add_argument('-factor', type=float, default=1.1)
     #parser.add_argument('-tfactor', type=float, default=1.0)
@@ -31,9 +39,15 @@ def get_parser():
     #parser.add_argument('-optmaxcycle', type=int, default=50)
     #parser.add_argument('-optstepsize', type=float, default=0.01)
     #parser.add_argument('-symprec', type=float, default=0.1)
-    parser.add_argument('-istbgn', type=int, default=1)
-    parser.add_argument('-istend', type=int, default=100)
-    parser.add_argument('-nstsub', type=int, default=100)
+    parser.add_argument(
+        '-istbgn', type=int, default=1
+    )
+    parser.add_argument(
+        '-istend', type=int, default=100
+    )
+    parser.add_argument(
+        '-nstsub', type=int, default=100
+    )
 
     return parser.parse_args()
 
