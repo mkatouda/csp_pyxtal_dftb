@@ -8,7 +8,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'csp_pyxtal_dftb=csp_pyxtal_dftb.csp_pyxtal_dftb:main',
+            'csp_pyxtal=csp_pyxtal_dftb.csp_pyxtal:main',
         ],
     },
     author="Michio Katouda",

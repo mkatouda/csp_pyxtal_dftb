@@ -3,26 +3,27 @@ import shutil
 from time import time
 import pandas as pd
 from pyxtal import pyxtal
-from .crys_geom_opt import get_ase_calculator, crys_geom_opt
+from .molcrystop import crys_geom_opt, write_proteindatabank
 from ase.io import read, write
 
 
-def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100, 
-                factor=1.0, t_factor=1.0, 
-                qc_method='DFTB', opt_method='LBFGS', opt_fmax=5e-1, 
-                opt_maxsteps=50, opt_maxstepsize=0.01, 
-                symprec=0.1, istruc_bgn=1, istruc_end=101):
+def opt_molcrys(basename, mols, nmols, spg, nstruc=100, 
+                factor=1.0, t_factor=1.0, use_hall=False,
+                istruc_bgn=1, istruc_end=101,
+                sim_method='LAMMPS', kpts=(1,1,1), ps_path=None,
+                qe_input={'system': {'vdw_corr': 'DFT-D3', 'dftd3_version': 3}}, cp2k_input='',
+                xtb_hamiltonian='GFN2-xTB',
+                opt_method='LBFGS', opt_fmax=5e-2, opt_maxsteps=100, 
+                opt_maxstepsize=0.01, symprec=0.1, verbose=False):
 
     if istruc_end > nstruc + 1:
         istruc_end = nstruc + 1        
 
     initdir = 'init'
 
-    xtb_paramfile = 'param_gfn0-xtb.txt'
-    calc = get_ase_calculator(qc_method)
     column_titles = ['ID', 'energy', 'energy_per_mol', 'density', 'volume', 
                      'a', 'b', 'c', 'alpha', 'beta', 'gamma', 
-                     'qc_method', 'opt_method', 
+                     'sim_method', 'opt_method', 
                      'opt_fmax', 'opt_maxstepsize', 'opt_converged', 'opt_steps', 'time']
     column_titles_summary = ['ID', 'energy', 'energy_per_mol', 'density', 'volume', 
                              'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'opt_converged']
@@ -35,11 +36,9 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
     t1 = time()
     cwdir = os.getcwd()
     print('Optimize molecular crystal in spacegroup {}.\n'.format(spg))
+    print('Simulation method: {}.\n'.format(sim_method))
 
-    sdiag = ''
-    if diag:
-        sdiag = '-diag'
-    spgdir = '{}_spg{}{}'.format(basename, spg, sdiag)
+    spgdir = 'spg{}'.format(spg)
     #if not os.path.exists(spgdir):
     #    os.makedirs(spgdir)
     os.chdir(spgdir)
@@ -48,15 +47,12 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
     #    os.makedirs(gendir)
     os.chdir(gendir)
 
-    sdiag = ''
-    if diag:
-        sdiag = '-diag'
-    basename1 = '{}_spg{}{}_factor{:.2f}_tfactor{:.2f}'.format(basename, spg, sdiag, factor, t_factor)
-    qcdir = '{}'.format(qc_method)
-    if not os.path.exists(qcdir):
-        os.makedirs(qcdir)
-    os.chdir(qcdir)
-    optdir = '{}'.format(opt_method)
+    basename1 = '{}_spg{}_factor{:.2f}_tfactor{:.2f}'.format(basename, spg, factor, t_factor)
+    simdir = '{}'.format(sim_method.lower())
+    if not os.path.exists(simdir):
+        os.makedirs(simdir)
+    os.chdir(simdir)
+    optdir = '{}'.format(opt_method.lower())
     if not os.path.exists(optdir):
         os.makedirs(optdir)
     os.chdir(optdir)
@@ -66,10 +62,7 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
         os.makedirs(optstepdir)
     os.chdir(optstepdir)
 
-    if qc_method == 'xTB':
-        shutil.copyfile(cwdir + '/' + xtb_paramfile, xtb_paramfile)
-
-    basename2 = '{}_{}_{}_fmax{:.4f}_maxsteps{:.5f}_optcycles{:04}'.format(basename1, qc_method, opt_method, 
+    basename2 = '{}_{}_{}_fmax{:.4f}_maxsteps{:.5f}_optcycles{:04}'.format(basename1, sim_method, opt_method, 
                                                                                opt_fmax, opt_maxstepsize, opt_maxsteps)
 
     df = pd.DataFrame(index=[], columns=column_titles)
@@ -79,21 +72,41 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
         print(basename3)
         logfile = '{}.log'.format(basename3)
         trajfile = '{}.traj'.format(basename3)
-        infile = '{}_{:06}_init.cif'.format(basename1, istruc)
+        infile = '{}_{:06}_init.pdb'.format(basename1, istruc)
+        lmpinfile = '{}_{:06}_init.input'.format(basename1, istruc)
+        lmpdatafile = '{}_{:06}_init.lmp'.format(basename1, istruc)
+        pdbin_path = '{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, infile)
+        lmpin_path = '{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, lmpinfile)
+        lmpdata_path = '{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, lmpdatafile)
+
         wrkdir = basename3
         if not os.path.exists(wrkdir):
             os.makedirs(wrkdir)
         os.chdir(wrkdir)
-        #pyxtal_struc = pyxtal()
-        #pyxtal_struc.from_seed('{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, infile))
-        #ase_struc = pyxtal_struc.to_ase(resort=False)
-        ase_struc = read('{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, infile))
-        ase_struc.calc = calc
-        tg1 = time()
-        ase_struc, energy, opt_steps, opt_converged = crys_geom_opt(ase_struc, basename, 
-                                                                    opt_method, opt_fmax, opt_maxsteps,
-                                                                    logfile, trajfile, opt_maxstepsize, symprec)
 
+        ase_struc = read(pdbin_path, format='proteindatabank')
+        if sim_method.upper() == 'LAMMPS':
+            shutil.copyfile(lmpin_path, lmpinfile)
+            shutil.copyfile(lmpdata_path, lmpdatafile)
+
+        tg1 = time()
+        energy, opt_steps, opt_converged = crys_geom_opt(
+            ase_struc=ase_struc,
+            sim_method=sim_method,
+            top_path=lmpinfile,
+            kpts=kpts,
+            ps_path=ps_path,
+            qe_input=qe_input,
+            cp2k_input=cp2k_input,
+            xtb_hamiltonian=xtb_hamiltonian,
+            opt_method=opt_method,
+            fmax=opt_fmax,
+            opt_maxsteps=opt_maxsteps,
+            maxstep=opt_maxstepsize,
+            symprec=symprec,
+            log_path=logfile,
+            traj_path=trajfile,
+        )
         tg = time() - tg1
         print('Relaxation took {:3f} seconds.\n'.format(tg))
         os.chdir('../')
@@ -101,6 +114,8 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
         shutil.copyfile(wrkdir + '/' + trajfile, trajfile)
         shutil.rmtree(wrkdir)
 
+        #energy = ase_struc.get_potential_energy()
+        #del ase_struc.calc
         energy_per_mol = energy / nmols[0]
         pyxtal_struc = pyxtal()
         pyxtal_struc.from_seed(ase_struc)
@@ -114,15 +129,19 @@ def opt_molcrys(basename, mols, nmols, spg, diag=False, nstruc=100,
         volume = pyxtal_struc.lattice.volume
         [a, b, c, alpha, beta, gamma] = pyxtal_struc.lattice.get_para(degree=True)
         record = pd.Series([istruc, energy, energy_per_mol, density, volume, a, b, c, 
-                            alpha, beta, gamma, qc_method, opt_method,
-                            opt_fmax, opt_maxstepsize, opt_converged, opt_steps, tg], 
+                            alpha, beta, gamma, sim_method, opt_method,
+                            opt_fmax, opt_maxstepsize, opt_converged, opt_steps, tg],
                            index=df.columns)
                                    
         df = df.append(record, ignore_index=True)
         #print(df)
         outfile = '{}_opt.cif'.format(basename3)
-        #pyxtal_struc.to_file(outfile)
         write(outfile, ase_struc, format='cif')
+        outfile = '{}_opt.pdb'.format(basename3)
+        with open(outfile, mode='w') as f:
+            write_proteindatabank(f, ase_struc, write_arrays=True)
+
+        del ase_struc, pyxtal_struc
 
     outfile = '{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
     df['ID'] = df['ID'].astype('int')

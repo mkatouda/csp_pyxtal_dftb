@@ -52,6 +52,20 @@ def get_parser():
     return parser.parse_args()
 
 
+def set_config(args):
+    # Read config yaml file
+    if args.inp is not None and os.path.isfile(args.inp):
+        with open(args.inp, 'r') as f:
+            conf = yaml.safe_load(f)
+    else:
+        conf = {}
+
+    # Set up default config values from program arguments
+    conf_def = vars(args).copy()
+    [conf.setdefault(k, v) for k, v in conf_def.items()]
+
+    return conf
+
 def set_default_config(conf):
     conf.setdefault('basename', 'benzene')
     conf.setdefault('mols', ['c1ccccc1.smi'])
