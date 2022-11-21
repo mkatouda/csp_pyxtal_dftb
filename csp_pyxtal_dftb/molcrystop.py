@@ -489,7 +489,6 @@ def crys_geom_opt(ase_struc, sim_method='LAMMPS', top_path='model.input', kpts=(
     write(optgeom_path, ase_struc, format='cif')
 
     print(ase_struc.calc, calc)
-    del ase_struc.calc
 
     return e, opt_steps, opt_converged
 

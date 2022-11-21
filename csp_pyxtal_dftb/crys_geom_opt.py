@@ -1,4 +1,4 @@
-oimport sys
+import sys
 import os
 from time import time
 from ase.constraints import ExpCellFilter

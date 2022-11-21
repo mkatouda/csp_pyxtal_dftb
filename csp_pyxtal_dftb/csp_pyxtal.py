@@ -91,7 +91,7 @@ def set_default_config(conf):
     conf.setdefault('ff', 'gaff2')
     conf.setdefault('charge_model', 'bcc')
 
-    conf.setdefault('sim_method', 'lammps')
+    conf.setdefault('sim_method', 'xtb')
     conf.setdefault('kpts', [1, 1, 1])
     conf.setdefault('ps_path', None)
     conf.setdefault('qe_input', {'system': {'vdw_corr': 'DFT-D3', 'dftd3_version': 3}})
@@ -104,8 +104,9 @@ def set_default_config(conf):
     conf.setdefault('opt_maxstepsize', 0.01)
     conf.setdefault('symprec', 0.1)
 
-    conf.setdefault('nogen', False)
-    conf.setdefault('noopt', False)
+    conf.setdefault('gen_crys', True)
+    conf.setdefault('geom_opt', True)
+    conf.setdefault('free_energy', False)
 
     conf.setdefault('verbose', True)
 
@@ -129,7 +130,7 @@ def csp_pyxtal_main(conf):
     ff = conf['ff']
     charge_model = conf['charge_model']
 
-    geom_opt = conf['noopt']
+    geom_opt = conf['geom_opt']
     sim_method = conf['sim_method']
     kpts = conf['kpts']
     ps_path = conf['ps_path']
@@ -142,6 +143,8 @@ def csp_pyxtal_main(conf):
     opt_maxsteps = conf['opt_maxsteps']
     opt_maxstepsize = conf['opt_maxstepsize']
     symprec = conf['symprec']
+
+    free_energy = conf['free_energy']
 
     nstruc_try = nstruc * 5
     istruc_bgn = conf['istbgn']
@@ -166,7 +169,8 @@ def csp_pyxtal_main(conf):
                     qe_input, cp2k_input, xtb_hamiltonian,
                     opt_method, opt_fmax, 
                     opt_maxsteps, opt_maxstepsize,
-                    symprec, verbose)
+                    symprec, free_energy, verbose)
+
 
 def main():
     args = get_parser()

@@ -2,10 +2,10 @@ import os
 import shutil
 from time import time
 import pandas as pd
+from ase.io import read, write
 from pyxtal import pyxtal
 from .molcrystop import crys_geom_opt, write_proteindatabank
-from ase.io import read, write
-
+from .phonon import free_energy_calc
 
 def opt_molcrys(basename, mols, nmols, spg, nstruc=100, 
                 factor=1.0, t_factor=1.0, use_hall=False,
@@ -14,18 +14,20 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
                 qe_input={'system': {'vdw_corr': 'DFT-D3', 'dftd3_version': 3}}, cp2k_input='',
                 xtb_hamiltonian='GFN2-xTB',
                 opt_method='LBFGS', opt_fmax=5e-2, opt_maxsteps=100, 
-                opt_maxstepsize=0.01, symprec=0.1, verbose=False):
+                opt_maxstepsize=0.01, symprec=0.1, free_energy=False, verbose=False):
 
     if istruc_end > nstruc + 1:
         istruc_end = nstruc + 1        
 
     initdir = 'init'
 
-    column_titles = ['ID', 'energy', 'energy_per_mol', 'density', 'volume', 
+    column_titles = ['ID', 'potential_energy', 'potential_energy_per_mol', 'Helmholtz_free_energy',
+                     'density', 'volume', 
                      'a', 'b', 'c', 'alpha', 'beta', 'gamma', 
                      'sim_method', 'opt_method', 
                      'opt_fmax', 'opt_maxstepsize', 'opt_converged', 'opt_steps', 'time']
-    column_titles_summary = ['ID', 'energy', 'energy_per_mol', 'density', 'volume', 
+    column_titles_summary = ['ID', 'potential_energy', 'potential_energy_per_mol', 
+                             'Helmholtz_free_energy', 'density', 'volume', 
                              'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'opt_converged']
 
     lendfmax = 20
@@ -63,7 +65,7 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
     os.chdir(optstepdir)
 
     basename2 = '{}_{}_{}_fmax{:.4f}_maxsteps{:.5f}_optcycles{:04}'.format(basename1, sim_method, opt_method, 
-                                                                               opt_fmax, opt_maxstepsize, opt_maxsteps)
+                                                                           opt_fmax, opt_maxstepsize, opt_maxsteps)
 
     df = pd.DataFrame(index=[], columns=column_titles)
     for istruc in range(istruc_bgn, istruc_end):
@@ -108,27 +110,34 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
             traj_path=trajfile,
         )
         tg = time() - tg1
-        print('Relaxation took {:3f} seconds.\n'.format(tg))
-        os.chdir('../')
-        shutil.copyfile(wrkdir + '/' + logfile, logfile)
-        shutil.copyfile(wrkdir + '/' + trajfile, trajfile)
-        shutil.rmtree(wrkdir)
+        print('Geometry relaxation took {:3f} seconds.\n'.format(tg))
 
         #energy = ase_struc.get_potential_energy()
-        #del ase_struc.calc
         energy_per_mol = energy / nmols[0]
         pyxtal_struc = pyxtal()
         pyxtal_struc.from_seed(ase_struc)
         density = pyxtal_struc.get_density()
+        volume = pyxtal_struc.lattice.volume
+        [a, b, c, alpha, beta, gamma] = pyxtal_struc.lattice.get_para(degree=True)
 
         print('Final lattice:')
         print(pyxtal_struc)
-        print('Energy:', energy)
+        print('Potential energy:', energy)
         print('Density:', density)
+
+        fe = None
+        if free_energy:
+            tf1 = time()
+            fe = free_energy_calc(ase_struc)
+            tf = time() - tf1
+            print('Free energy calculation took {:3f} seconds.\n'.format(tf))
+
+        os.chdir('../')
+        shutil.copyfile(wrkdir + '/' + logfile, logfile)
+        shutil.copyfile(wrkdir + '/' + trajfile, trajfile)
+        shutil.rmtree(wrkdir)
               
-        volume = pyxtal_struc.lattice.volume
-        [a, b, c, alpha, beta, gamma] = pyxtal_struc.lattice.get_para(degree=True)
-        record = pd.Series([istruc, energy, energy_per_mol, density, volume, a, b, c, 
+        record = pd.Series([istruc, energy, energy_per_mol, fe, density, volume, a, b, c, 
                             alpha, beta, gamma, sim_method, opt_method,
                             opt_fmax, opt_maxstepsize, opt_converged, opt_steps, tg],
                            index=df.columns)
@@ -140,7 +149,8 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
         outfile = '{}_opt.pdb'.format(basename3)
         with open(outfile, mode='w') as f:
             write_proteindatabank(f, ase_struc, write_arrays=True)
-
+       
+        del ase_struc.calc
         del ase_struc, pyxtal_struc
 
     outfile = '{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
@@ -156,9 +166,13 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
     print('\n')
                     
     print('Summary of generated structures (sorted in energies): ', basename2)
-    print(df_summary.sort_values('energy', ascending=True).head(lendf))
-
+    print(df_summary.sort_values('potential_energy', ascending=True).head(lendf))
     print('\n')
+
+    if free_energy:
+        print('Summary of generated structures (sorted in energies): ', basename2)
+        print(df_summary.sort_values('Helmholtz_free_energy', ascending=True).head(lendf))
+        print('\n')
 
     print('Summary of generated structures (sorted in densities) ', basename2)
     print(df_summary.sort_values('density', ascending=False).head(lendf))
