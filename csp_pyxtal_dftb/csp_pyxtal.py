@@ -2,7 +2,7 @@ import os
 import argparse
 import yaml
 from time import time
-from .gen_random_molcrys import gen_random_molcrys
+from .gen_molcrys import gen_random_molcrys
 from .opt_molcrys import opt_molcrys
 
 
