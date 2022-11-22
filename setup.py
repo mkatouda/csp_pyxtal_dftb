@@ -9,6 +9,7 @@ setup(
     entry_points={
         'console_scripts': [
             'csp_pyxtal=csp_pyxtal_dftb.csp_pyxtal:main',
+            'compare_crys=csp_pyxtal_dftb.critic2:main',
         ],
     },
     author="Michio Katouda",
