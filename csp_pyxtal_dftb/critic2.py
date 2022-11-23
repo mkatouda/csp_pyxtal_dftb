@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import glob
 import argparse
 import subprocess
@@ -127,7 +128,13 @@ def compare_crys(infmt='cif', refstrucfile=None, comparison='POWDER',
     critic2out = 'cryscompare.cro'
     critic2err = 'cryscompare.cre'
 
-    strucfiles = glob.glob("*." + infmt)
+    def atoi(text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(text):
+        return [atoi(c) for c in re.split(r'(\d+)', text)]
+
+    strucfiles = sorted(glob.glob("*." + infmt), key=natural_keys)
     ncrys = len(strucfiles)
     if ncrys <= 1: return
 

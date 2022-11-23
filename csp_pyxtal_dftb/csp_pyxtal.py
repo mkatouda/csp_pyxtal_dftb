@@ -108,6 +108,9 @@ def set_default_config(conf):
     conf.setdefault('geom_opt', True)
     conf.setdefault('free_energy', False)
 
+    conf.setdefault('strucdiff_method', 'POWDER')
+    conf.setdefault('refstrucfile', None)
+
     conf.setdefault('verbose', True)
 
     return conf
@@ -152,6 +155,9 @@ def csp_pyxtal_main(conf):
     nstruc_sub = conf['nstsub']
     nstbat = int(nstruc / nstruc_sub)
 
+    strucdiff_method = conf['strucdiff_method']
+    refstrucfile = conf['refstrucfile']
+
     verbose = conf['verbose']
 
     if gen_crys:
@@ -159,7 +165,7 @@ def csp_pyxtal_main(conf):
                            nstruc, factor, t_factor, use_hall,
                            nstruc_try, istruc_bgn, istruc_end,
                            nxyz, ff, charge_model,
-                           verbose)
+                           strucdiff_method, verbose)
 
     if geom_opt:
         opt_molcrys(basename, mols, nmols, spg, nstruc,
@@ -169,7 +175,8 @@ def csp_pyxtal_main(conf):
                     qe_input, cp2k_input, xtb_hamiltonian,
                     opt_method, opt_fmax, 
                     opt_maxsteps, opt_maxstepsize,
-                    symprec, free_energy, verbose)
+                    symprec, strucdiff_method, refstrucfile,
+                    free_energy, verbose)
 
 
 def main():

@@ -1,11 +1,15 @@
 import os
 import shutil
 from time import time
+
 import pandas as pd
 from ase.io import read, write
 from pyxtal import pyxtal
+
 from .molcrystop import crys_geom_opt, write_proteindatabank
 from .phonon import free_energy_calc
+from .critic2 import compare_crys
+
 
 def opt_molcrys(basename, mols, nmols, spg, nstruc=100, 
                 factor=1.0, t_factor=1.0, use_hall=False,
@@ -14,7 +18,8 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
                 qe_input={'system': {'vdw_corr': 'DFT-D3', 'dftd3_version': 3}}, cp2k_input='',
                 xtb_hamiltonian='GFN2-xTB',
                 opt_method='LBFGS', opt_fmax=5e-2, opt_maxsteps=100, 
-                opt_maxstepsize=0.01, symprec=0.1, free_energy=False, verbose=False):
+                opt_maxstepsize=0.01, symprec=0.1, 
+                strucdiff_method='POWDER', refstrucfile=None, free_energy=False, verbose=False):
 
     if istruc_end > nstruc + 1:
         istruc_end = nstruc + 1        
@@ -153,7 +158,13 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
         del ase_struc.calc
         del ase_struc, pyxtal_struc
 
-    outfile = '{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+    diffmatfile = 'diffmat_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+    struclistfile = 'strulist_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+    compare_crys(infmt='cif', refstrucfile=refstrucfile, comparison=strucdiff_method.upper(),
+                 diffmatfile=diffmatfile, struclistfile=struclistfile,
+                 verbose=verbose)
+
+    outfile = 'summary_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
     df['ID'] = df['ID'].astype('int')
     df.to_csv(outfile, float_format='%.3f')
 

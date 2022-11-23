@@ -3,13 +3,14 @@ import os
 import argparse
 import subprocess
 from time import time
-#import pandas as pd
 
 import yaml
 import numpy as np
 from ase.io import read, write
 from pyxtal import pyxtal
 from pyxtal.molecule import generate_molecules
+
+from .critic2 import compare_crys
 
 
 def pyxtal_to_ase(cs, nxyz, mol_natoms, mol_atomtypes):
@@ -94,10 +95,10 @@ def write_proteindatabank(fileobj, images, write_arrays=True):
                                     x, y, z, occ, bf, symbols[a].upper()))
         fileobj.write('ENDMDL\n')
 
-def run_cmd(cmd):
+def run_cmd(cmd, verbose=False):
     print(' '.join(cmd))
     results = subprocess.run(cmd, capture_output=True, check=True, text=True)
-    print('stdout:\n', results.stdout, '\nstderr:\n', results.stderr)
+    if verbose: print('stdout:\n', results.stdout, '\nstderr:\n', results.stderr)
     return results
 
 def g16resp_run(mol_path, g16inp_path, charge=0, multi=1, mem=4, nprocshared=4):
@@ -280,7 +281,7 @@ def gen_random_molcrys(basename, mols, nmols, spg, nstruc=100,
                        factor=1.0, t_factor=1.0, use_hall=False,
                        nstruc_try=500, istruc_bgn=1, istruc_end=100,
                        nxyz=[1, 1, 1], ff='gaff2', charge_model='bcc',
-                       verbose=False):
+                       strucdiff_method='POWDER', verbose=False):
 
     cwdir = os.getcwd()
     print('Current working directory: {}'.format(cwdir))
@@ -371,6 +372,12 @@ def gen_random_molcrys(basename, mols, nmols, spg, nstruc=100,
             if istruc == nstruc:
                 break
 
+    # Compare crystal structure similarity
+    if strucdiff_method.upper() in ['POWDER', 'RDF', 'AMD']:
+        compare_crys(infmt='cif', refstrucfile=None, comparison=strucdiff_method.upper(),
+                     diffmatfile='diffmat.csv', struclistfile='struclist.csv',
+                     verbose=verbose)
+
     os.chdir(cwdir)
     t2 = time()
     print('All of crystal generation took {:3f} seconds.\n'.format(t2 - t1))
@@ -407,7 +414,11 @@ def set_default_config(conf):
     conf.setdefault('ff', 'gaff2')
     conf.setdefault('charge_model', 'bcc')
 
+    strucdiff_method('strucdiff_method', 'POWDER')
+
     conf.setdefault('verbose', True)
+
+    return conf
 
 def main():
     args = get_parser()
@@ -439,13 +450,16 @@ def main():
     ff = conf['ff']
     charge_model = conf['charge_model']
 
+    strucdiff_method = conf['strucdiff_method']
+
     verbose = conf['verbose']
 
     gen_random_molcrys(basename, mols, nmols, spg,
                        nstruc, factor, t_factor, use_hall,
                        nstruc_try, istruc_bgn, istruc_end,
                        nxyz, ff, charge_model,
-                       verbose)
+                       strucdiff_method, verbose)
+                       
 
 if __name__ == '__main__':
     main()
