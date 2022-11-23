@@ -15,45 +15,9 @@ def get_parser():
         formatter_class=customHelpFormatter,
         description='PyXtal GAFF & DFTB crystal structure prediction code'
     )
-    parser = argparse.ArgumentParser(
-        formatter_class=customHelpFormatter,
-    )
     parser.add_argument(
         '-i', '--inp', type=str,
         help = 'yaml style input file, overwriting argument values',
-    )
-    parser.add_argument(
-        '-v', '--verbose', action='store_true',
-        help = 'Verbose output.'
-    )
-    parser.add_argument(
-        '-d', '--debug', action='store_true',
-        help = "debug mode"
-    )
-    parser.add_argument(
-        '-nogen', action='store_false'
-    )
-    parser.add_argument(
-        '-noopt', action='store_false'
-    )
-    #parser.add_argument('-nstruc', type=int, default=100)
-    #parser.add_argument('-factor', type=float, default=1.1)
-    #parser.add_argument('-tfactor', type=float, default=1.0)
-    #parser.add_argument('-diag', action='store_true')
-    #parser.add_argument('-qc', default='DFTB')
-    #parser.add_argument('-opt', default='LBFGS')
-    #parser.add_argument('-fmax', type=float, default=0.5)
-    #parser.add_argument('-optmaxcycle', type=int, default=50)
-    #parser.add_argument('-optstepsize', type=float, default=0.01)
-    #parser.add_argument('-symprec', type=float, default=0.1)
-    parser.add_argument(
-        '-istbgn', type=int, default=1
-    )
-    parser.add_argument(
-        '-istend', type=int, default=100
-    )
-    parser.add_argument(
-        '-nstsub', type=int, default=100
     )
 
     return parser.parse_args()
@@ -81,7 +45,7 @@ def set_default_config(conf):
     conf.setdefault('nstruc', 100)
     conf.setdefault('istbgn', 1)
     conf.setdefault('istend', 100)
-    conf.setdefault('nst_sub', 100)
+    conf.setdefault('nstsub', 100)
     conf.setdefault('factor', 1.3)
     conf.setdefault('tfactor', 1.5)
     conf.setdefault('use_hall', False)
@@ -111,6 +75,25 @@ def set_default_config(conf):
     conf.setdefault('strucdiff_method', 'POWDER')
     conf.setdefault('refstrucfile', None)
 
+    if os.getenv('AMBERHOME') is None:
+        dftb_prefix = '~/slko/3ob-3-1/'
+    else:
+        dftb_prefix = os.getenv('AMBERHOME') + '/dat/slko/3ob-3-1/'
+    conf.setdefault('dftb_command', 'dftb+ > PREFIX.out')
+    conf.setdefault('dftb_prefix', dftb_prefix)
+
+    conf.setdefault('cp2k_command', 'cp2k_shell.ssmp')
+    conf.setdefault('cp2k_data_dir', 'BASIS_MOLOPT')
+
+    if os.getenv('CONDA_PREFIX') is None:
+        espresso_pseudo = '~/espresso/pseudo/'
+    else:
+        espresso_pseudo = os.getenv('CONDA_PREFIX') + '/share/sssp/efficiency/'
+    conf.setdefault('espresso_command', 'pw.x -in PREFIX.pwi > PREFIX.pwo')
+    conf.setdefault('espresso_pseudo', espresso_pseudo)
+
+    conf.setdefault('critic2_command', 'critic2')
+
     conf.setdefault('verbose', True)
 
     return conf
@@ -122,7 +105,7 @@ def csp_pyxtal_main(conf):
     nmols = conf['nmols']
     spg = conf['spg']
 
-    gen_crys = conf['nogen']
+    gen_crys = conf['gen_crys']
     nstruc = conf['nstruc']
     factor =  conf['factor']
     t_factor = conf['tfactor']
@@ -159,6 +142,24 @@ def csp_pyxtal_main(conf):
     refstrucfile = conf['refstrucfile']
 
     verbose = conf['verbose']
+
+    if os.getenv('ASE_DFTB_COMMAND') is None:
+        os.environ['ASE_DFTB_COMMAND'] = conf['dftb_command']
+    if os.getenv('DFTB_PREFIX') is None:
+        os.environ['DFTB_PREFIX'] = conf['dftb_prefix']
+
+    if os.getenv('ASE_ESPRESSO_COMMAND') is None:
+        os.environ['ASE_ESPRESSO_COMMAND'] = conf['espresso_command']
+    if os.getenv('ESPRESSO_PSEUDO') is None:
+        os.environ['ESPRESSO_PSEUDO'] = conf['espresso_pseudo']
+
+    if os.getenv('ASE_CP2K_COMMAND') is None:
+        os.environ['ASE_CP2K_COMMAND'] = conf['cp2k_command']
+    if os.getenv('CP2K_DATA_DIR') is None:
+        os.environ['CP2K_DATA_DIR'] = conf['cp2k_data_dir']
+
+    if os.getenv('CRITIC2_COMMAND') is None:
+        os.environ['CRITIC2_COMMAND'] = conf['critic2_command']
 
     if gen_crys:
         gen_random_molcrys(basename, mols, nmols, spg,
