@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%setup
+     cp -r ~/develop/csp_pyxtal_dftb ${SINGULARITY_ROOTFS}/csp_pyxtal_dftb
+     cp -r ~/bin/critic2 ${SINGULARITY_ROOTFS}/critic2
+
+%post
+    apt-get update
+    apt-get upgrade
+    apt-get install -y curl wget git zip
+    curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh
+    bash /tmp/miniconda.sh -bfp /opt/miniconda3
+    rm -rf /tmp/miniconda.sh
+    . /opt/miniconda3/etc/profile.d/conda.sh
+    conda activate base
+    conda config --add channels conda-forge
+    conda update conda -y
+    conda install -c conda-forge mamba -y
+    mamba install -c conda-forge python=3.10 -y
+    echo '. /opt/miniconda3/etc/profile.d/conda.sh' >> ${SINGULARITY_ENVIRONMENT}
+    echo 'conda activate base' >> ${SINGULARITY_ENVIRONMENT}
+    mamba install -c conda-forge pyyaml openbabel rdkit ambertools lammps dftbplus qe cp2k ase pymatgen sssp -y
+    pip install pyxtal
+    pip install git+https://github.com/shirtsgroup/InterMol.git
+    cd csp_pyxtal_dftb && pip install . && cd ../
+
+%environment
+    export PATH=${PATH}:/critic2/bin
+
+%labels
+    Author katouda@rist.or.jp
+    Version v0.1.0
