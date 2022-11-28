@@ -94,7 +94,7 @@ def set_default_config(conf):
 
     conf.setdefault('critic2_command', 'critic2')
 
-    conf.setdefault('verbose', True)
+    conf.setdefault('verbose', False)
 
     return conf
 
