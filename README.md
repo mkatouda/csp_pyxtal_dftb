@@ -2,7 +2,7 @@
 Crytal structure prediction using PyXtal and DFTB+
 
 ##  Requirements 
-1.  [Python]             (https://www.anaconda.com/download/)
+1.  [Miniconda Python]   (https://docs.conda.io/en/latest/miniconda.html)
 2.  [PyXtal]             (https://github.com/qzhu2017/PyXtal)
 3.  [DFTB+]              (https://dftbplus.org/)
 4.  [rdkit]              (https://anaconda.org/rdkit/rdkit)
@@ -28,21 +28,34 @@ Crytal structure prediction using PyXtal and DFTB+
 1. Install anaconda3 or miniconda3
 
 2. Creaate python 3.10 virtual environment
-'''
-   $ conda create -n py310-molcryspred python=3.10
-   $ conda activate py310-molcryspred  
-   $ conda install -c conda-forge pyyaml openbabel rdkit ambertools lammps dftbplus qe cp2k ase pymatgen sssp  
-   $ pip install pyxtal  
-   $ pip install git+https://github.com/shirtsgroup/InterMol.git
-   $ pip install git+https://github.com/mkatouda/csp_pyxtal_dftb.git
-'''
-
+```
+$ conda create -n py310-molcryspred python=3.10
+$ conda activate py310-molcryspred  
+$ conda install -c conda-forge pyyaml openbabel rdkit ambertools lammps dftbplus qe cp2k ase pymatgen sssp  
+$ pip install pyxtal  
+$ pip install git+https://github.com/shirtsgroup/InterMol.git
+$ pip install git+https://github.com/mkatouda/csp_pyxtal_dftb.git
+```
 
 ## How to run csp_pyxtal sample job
 
 ### Crystal prediction of benzene
-1. Move working dirctory
-   $ cd ./tests/benzene  
+1. Get sample input files
+```
+$ git clon https://github.com/mkatouda/csp_pyxtal_dftb.git
+```
 
-2. Run python script csp_pyxtal_dftb.py with input yaml file (benzene.yml)
-   $ bash ./run.sh
+2. Move working dirctory
+```
+$ cd .csp_pyxtal_dftb/tests/benzene  
+```
+
+3. Activate miniconda virtual environment
+```
+$ conda activate py310-molcryspred
+```
+
+4. Run python script csp_pyxtal_dftb.py with input yaml file (benzene.yml)
+```
+$ bash ./run.sh
+```
