@@ -9,7 +9,7 @@ tfactor: 1.5
 gen_crys: True
 verbose: True
 
-geom_opt: True
+opt_geom: True
 sim_method: 'xtb'
 kpts: [2, 2, 2]
 

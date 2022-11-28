@@ -69,7 +69,7 @@ def set_default_config(conf):
     conf.setdefault('symprec', 0.1)
 
     conf.setdefault('gen_crys', True)
-    conf.setdefault('geom_opt', True)
+    conf.setdefault('opt_crys', True)
     conf.setdefault('free_energy', False)
 
     conf.setdefault('strucdiff_method', 'POWDER')
@@ -116,7 +116,7 @@ def csp_pyxtal_main(conf):
     ff = conf['ff']
     charge_model = conf['charge_model']
 
-    geom_opt = conf['geom_opt']
+    opt_crys = conf['opt_crys']
     sim_method = conf['sim_method']
     kpts = conf['kpts']
     ps_path = conf['ps_path']
@@ -168,7 +168,7 @@ def csp_pyxtal_main(conf):
                            nxyz, ff, charge_model,
                            strucdiff_method, verbose)
 
-    if geom_opt:
+    if opt_crys:
         opt_molcrys(basename, mols, nmols, spg, nstruc,
                     factor, t_factor, use_hall,
                     istruc_bgn, istruc_end,
