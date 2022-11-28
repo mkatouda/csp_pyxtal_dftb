@@ -1,0 +1,20 @@
+basename: aspirin
+mols : ['./aspirin.xyz']
+nmols: [4]
+spg: 14
+nstruc: 20
+factor: 1.3
+tfactor: 1.5
+
+gen_crys: True
+verbose: True
+
+geom_opt: True
+sim_method: 'xtb'
+kpts: [2, 2, 2]
+
+opt_maxsteps: 20
+opt_method: 'LBFGS'
+free_energy: False
+
+dftb_command: 'dftb+ > PREFIX.out'
