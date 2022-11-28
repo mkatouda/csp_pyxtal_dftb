@@ -27,3 +27,6 @@ RUN apt-get update \
 RUN echo '. /opt/miniconda3/etc/profile.d/conda.sh' >> ~/.bashrc
 RUN echo 'conda activate base' >> ~/.bashrc
 ENV PATH=${PATH}:/critic2/bin
+
+ENTRYPOINT ["/bin/bash -c 'source /root/.bashrc'"]
+CMD ["csp_pyxtal -h"]

@@ -2,8 +2,8 @@ Bootstrap: docker
 From: ubuntu:22.04
 
 %setup
-     cp -r ~/develop/csp_pyxtal_dftb ${SINGULARITY_ROOTFS}/csp_pyxtal_dftb
-     cp -r ~/bin/critic2 ${SINGULARITY_ROOTFS}/critic2
+     cp -r ./csp_pyxtal_dftb ${SINGULARITY_ROOTFS}/csp_pyxtal_dftb
+     cp -r ./critic2 ${SINGULARITY_ROOTFS}/critic2
 
 %post
     apt-get update
@@ -27,6 +27,9 @@ From: ubuntu:22.04
 
 %environment
     export PATH=${PATH}:/critic2/bin
+
+%runscript
+    exec /bin/bash "$@"
 
 %labels
     Author katouda@rist.or.jp
