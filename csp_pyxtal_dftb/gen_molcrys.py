@@ -156,6 +156,7 @@ def psi4resp_run(mol_path, respchg_path='resp_charge.out'):
 def ac_run(pm, ff='gaff2', charge_model='bcc'):
     mol_atomtypes = []
     mol_natoms = []
+    print('ac_run\n', pm)
     for i, p in enumerate(pm):
         resname = 'M{:02}'.format(i+1)
         molfile = resname + '.mol'
@@ -306,11 +307,21 @@ def gen_random_molcrys(basename, mols, nmols, spg, nstruc=100,
     os.chdir(initdir)
 
     pm = []
-    for mol in mols:
+    for idx, mol in enumerate(mols):
         smile = mol.replace('.smi', '')
-        pm += generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5)
+        print('mols', idx, 'smiles:', smile)
+        pxmols = generate_molecules(smile, wps=None, N_iter=4, N_conf=10, tol=0.5)
+        engs = [m.energy for m in pxmols]
+        imin = engs.index(min(engs))
+        print('minimun energy index:', imin, engs[imin])
+        if verbose:
+            for m in pxmols:
+                print(m.energy, m.pga.sch_symbol)
+        pm.append(pxmols[imin])
+
     if verbose:
         print('pyxtal_molecules:')
+        print('lenpm', len(pm))
         for p in pm:
             print(p.name)
             print(vars(p))
