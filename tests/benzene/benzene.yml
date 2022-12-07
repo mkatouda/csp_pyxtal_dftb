@@ -1,4 +1,4 @@
-basename: benzene
+basename: 'benzene'
 mols: ['c1ccccc1.smi']
 nmols: [4]
 spg: 14

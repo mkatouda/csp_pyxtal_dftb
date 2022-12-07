@@ -1,4 +1,4 @@
-basename: aspirin
+basename: 'aspirin'
 mols : ['./aspirin.xyz']
 nmols: [4]
 spg: 14

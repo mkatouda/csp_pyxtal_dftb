@@ -14,21 +14,49 @@ from .critic2 import compare_crys
 
 
 def pyxtal_to_ase(cs, nxyz, mol_natoms, mol_atomtypes):
-    nmols = cs.numMols[0] * nxyz[0] * nxyz[1] * nxyz[2]
-    print('nxyz:', nxyz, 'nmols:', nmols)
+    #print('cs.numMols:', cs.numMols, len(cs.numMols), type(cs.numMols))
+    #print('cs.numMols.shape:', cs.numMols.shape, len(cs.numMols.shape))
 
     atoms = cs.to_ase(resort=False)
+
+    #ij = 0
+    #ijk = 0
+    #for i in range(cs.numMols.shape[0]):
+    #    print(i, type(cs.numMols[i]), cs.numMols[i])
+    #    print('mol_atomtypes:', mol_atomtypes[i], 'mol_natoms:', mol_natoms[i])
+    #    for j in range(cs.numMols[i]):
+    #        ij += 1
+    #        for k in range(mol_natoms[i]):
+    #            ijk += 1
+    #            print(i, j, k, ijk, 'res:', ij, 'M{:02}'.format(i+1))
+
+    at = np.concatenate([
+        mol_atomtypes[i]
+        for i in range(cs.numMols.shape[0])
+        for j in range(cs.numMols[i])
+    ])
+    print(type(at), len(at), at)
+    resname = np.array([
+        'M{:02}'.format(i+1)
+        for i in range(cs.numMols.shape[0])
+        for j in range(cs.numMols[i])
+        for k in range(mol_natoms[i])
+    ])
+    print(type(resname), len(resname), resname)
+
+    atoms.set_array('atomtypes', at)
+    atoms.set_array('residuenames', resname)
     atoms *= nxyz
 
-    at = np.concatenate([mol_atomtypes[0] for i in range(nmols)])
-    print(type(at), at)
-    atoms.set_array('atomtypes', at)
-    resname = 'M01'
-    resname = np.array([resname for i in range(nmols*mol_natoms[0])])
-    print(type(resname), resname)
-    atoms.set_array('residuenames', resname)
-    resnum = np.array([i // mol_natoms[0] + 1 for i in range(nmols*mol_natoms[0])])
-    print(type(resnum), resnum)
+    ii = 0
+    tmp = []
+    for l in range(nxyz[0] * nxyz[1] * nxyz[2]):
+        for i in range(cs.numMols.shape[0]):
+            tmp.extend([ii+j+1 for j in range(cs.numMols[i]) for k in range(mol_natoms[i])])
+            ii += cs.numMols[i]
+    resnum = np.array(tmp)
+    print(type(resnum), len(resnum), resnum)
+
     atoms.set_array('residuenumbers', resnum)
 
     return atoms
@@ -206,7 +234,7 @@ def tleap_run(pm, cryspdb_path='model.pdb', leapin_path='leap.in'):
         resname = 'M{:02}'.format(i+1)
         mol2_path = resname + '.mol2'
         s += '{} = loadmol2 {}\n'.format(resname, mol2_path)
-        s += 'charge {}'.format(resname)
+        s += 'charge {}\n'.format(resname)
     s += '\n'
     s += 'crys = loadPDB {}\n'.format(cryspdb_path)
     s += 'charge crys\n\n'
