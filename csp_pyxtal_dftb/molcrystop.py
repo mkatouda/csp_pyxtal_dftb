@@ -339,7 +339,8 @@ def get_ase_calculator(atoms, sim_method='LAMMPS', top_path='model.input', kpts=
                      topologyfile=top_path,
                      incoordfile='mm.crd')
     elif sim_method.upper() == 'DFTB':
-        from ase.calculators.dftb import Dftb
+        #from ase.calculators.dftb import Dftb
+        from .dftb import Dftb
         calc = Dftb(kpts=kpts,
                     Hamiltonian_='DFTB',
                     Hamiltonian_SCC='Yes',
