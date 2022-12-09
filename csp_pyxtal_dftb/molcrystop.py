@@ -375,7 +375,8 @@ def get_ase_calculator(atoms, sim_method='LAMMPS', top_path='model.input', kpts=
         print('CP2K input_data:\n', cp2k_input)
         calc = CP2K(inp=cp2k_input)
     else:
-        from ase.calculators.dftb import Dftb
+        #from ase.calculators.dftb import Dftb
+        from .dftb import Dftb
         calc = Dftb(kpts=kpts,
                     Hamiltonian_='xTB',
                     Hamiltonian_Method=xtb_hamiltonian,
