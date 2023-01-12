@@ -4,10 +4,13 @@ import re
 import glob
 import argparse
 import subprocess
+import csv
 from time import time
 
 import yaml
 import numpy as np
+import matplotlib.pyplot as plt
+from rdkit.ML.Cluster import Butina
 
 
 critic2_cmd = 'critic2'
@@ -48,8 +51,20 @@ def get_parser():
         help = 'Crystal structure list output filename'
     )
     parser.add_argument(
+        '-cc', '--clustercsv', type=str, default='cluster_profile.csv',
+        help = 'Clustring profile of crystal structure output csv filename'
+    )
+    parser.add_argument(
+        '-cp', '--clusterpng', type=str, default='cluster_profile.png',
+        help = 'Clustring profile of crystal structure output png filename'
+    )
+    parser.add_argument(
         '--comparison', type=str, default='POWDER',
         help = 'Reference crystal structure input filename: [POWDER|RDF|AMD]'
+    )
+    parser.add_argument(
+        '--cluster-cutoff', type=float, default=0.5,
+        help = 'cutoff of distant matrix of crystals for clustering'
     )
     parser.add_argument(
         '-v', '--verbose', action='store_true',
@@ -121,9 +136,23 @@ def parse_diffmat(results, ncrys, verbose=False):
 
     return diff_mat
 
-def compare_crys(infmt='cif', refstrucfile=None, comparison='POWDER', 
-                 diffmatfile='diffmat.csv', struclistfile='struclist.csv',
-                 verbose=False):
+def plot_cluster_profile(clusters, pngfile):
+    fig = plt.figure(1, figsize=(10, 8))
+    plt1 = plt.subplot(111)
+    plt.axis([0, len(clusters), 0, len(clusters[0])+1])
+    plt.xlabel('Cluster index', fontsize=20)
+    plt.ylabel('Number of molecules', fontsize=20)
+    plt.tick_params(labelsize=16)
+    plt1.bar(range(1, len(clusters)), [len(c) for c in clusters[:len(clusters)-1]], lw=0)
+    plt.savefig(pngfile)
+    plt.clf()
+    plt.close()
+
+def compare_crys(infmt='cif', refstrucfile=None, comparison='POWDER',
+                 cluster_cutoff=0.5, diffmatfile='diffmat.csv',
+                 struclistfile='struclist.csv', clustercsvfile='cluster_profile.csv',
+                 clusterpngfile='cluster_profile.png', verbose=False):
+                 
     critic2in = 'cryscompare.cri'
     critic2out = 'cryscompare.cro'
     critic2err = 'cryscompare.cre'
@@ -168,10 +197,46 @@ def compare_crys(infmt='cif', refstrucfile=None, comparison='POWDER',
     with open(critic2err, mode='w') as f:
         f.write(results.stderr)
 
+    t1 = time()
     diff_mat = parse_diffmat(results, ncrys, verbose=verbose)
     np.savetxt(diffmatfile, diff_mat, delimiter=',', fmt='%.7f')
 
-    return diff_mat
+    dist_mat_tri = []
+    for i in range(ncrys):
+        for j in range(i):
+            dist_mat_tri.append(diff_mat[i, j])
+
+    if verbose:
+        print('Distance matrix:')
+        ij = 0
+        for i in range(ncrys):
+            for j in range(i):
+                print(i, j, dist_mat_tri[ij])
+                ij += 1
+
+    t1 = time()
+    print('Start Butina crystal clustering using critic2 results:')
+    clusters_tmp = Butina.ClusterData(dist_mat_tri, ncrys, cluster_cutoff,
+                                      isDistData=True, reordering=True)
+    tc = time() - t1
+    print('Finish Butina crystal clustering:\n Elapsed time (s):', tc)
+
+    clusters = []
+    for i in range(len(clusters_tmp)):
+        clusters.append([c+1 for c in clusters_tmp[i]])
+
+    with open(clustercsvfile, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(clusters)
+
+    print('Number of clusters:', len(clusters))
+    if verbose:
+        for i in range(len(clusters)):
+            print('Cluster_{}:'.format(i), len(clusters[i]), clusters[i])
+
+    plot_cluster_profile(clusters, clusterpngfile)
+
+    return clusters
 
 def main():
     args = get_parser()
@@ -192,13 +257,17 @@ def main():
         if os.path.isfile(refstrucfile):
             refstrucfile = os.path.abspath(refstrucfile)
     comparison = conf['comparison']
+    cluster_cutoff = conf['cluster_cutoff']
     diffmatfile = conf['diffmat']
     struclistfile = conf['struclist']
+    clustercsvfile = conf['clustercsv']
+    clusterpngfile = conf['clusterpng']
     verbose = conf['verbose']
 
     compare_crys(infmt=infmt, refstrucfile=refstrucfile, comparison=comparison,
-                 diffmatfile=diffmatfile, struclistfile=struclistfile,
-                 verbose=verbose)
+                 cluster_cutoff=cluster_cutoff, diffmatfile=diffmatfile,
+                 struclistfile=struclistfile, clustercsvfile=clustercsvfile,
+                 clusterpngfile=clusterpngfile, verbose=verbose)
 
 if __name__ == '__main__':
     main()

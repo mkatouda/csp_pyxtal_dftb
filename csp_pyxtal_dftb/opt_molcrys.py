@@ -1,5 +1,6 @@
 import os
 import shutil
+import csv
 from time import time
 
 import pandas as pd
@@ -13,13 +14,14 @@ from .critic2 import compare_crys
 
 def opt_molcrys(basename, mols, nmols, spg, nstruc=100, 
                 factor=1.0, t_factor=1.0, use_hall=False,
-                istruc_bgn=1, istruc_end=101,
+                istruc_bgn=1, istruc_end=101, use_cluster_input=False,
                 sim_method='LAMMPS', kpts=(1,1,1), ps_path=None,
                 qe_input={'system': {'vdw_corr': 'DFT-D3', 'dftd3_version': 3}}, cp2k_input='',
                 xtb_hamiltonian='GFN2-xTB',
                 opt_method='LBFGS', opt_fmax=5e-2, opt_maxsteps=100, 
                 opt_maxstepsize=0.01, symprec=0.1, 
-                strucdiff_method='POWDER', refstrucfile=None, free_energy=False, verbose=False):
+                strucdiff_method='POWDER', refstrucfile=None, cluster_cutoff=0.5,
+                free_energy=False, verbose=False):
 
     if istruc_end > nstruc + 1:
         istruc_end = nstruc + 1        
@@ -72,8 +74,23 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
     basename2 = '{}_{}_{}_fmax{:.4f}_maxsteps{:.5f}_optcycles{:04}'.format(basename1, sim_method, opt_method, 
                                                                            opt_fmax, opt_maxstepsize, opt_maxsteps)
 
+    if use_cluster_input:
+        clustercsvinfile = '{}_cluster_profile.csv'.format(basename1)
+        clustercsvin_path = '{}/{}/{}/{}/{}'.format(cwdir, spgdir, gendir, initdir, clustercsvinfile)
+
+        with open(clustercsvin_path, 'r') as csv_file:
+            clusters = list(csv.reader(csv_file))
+        if verbose:
+            for i in range(len(clusters)):
+                print('Cluster_{}:'.format(i), len(clusters[i]), clusters[i])
+        struc_IDs = [int(c[0]) for c in clusters]
+        struc_IDs = struc_IDs[istruc_bgn-1:istruc_end]
+    else:
+        struc_IDs = [i for i in range(istruc_bgn, istruc_end)]
+    print('struc_IDs:', struc_IDs)
+
     df = pd.DataFrame(index=[], columns=column_titles)
-    for istruc in range(istruc_bgn, istruc_end):
+    for istruc in struc_IDs:
 
         basename3 = '{}_{:06}'.format(basename2, istruc)
         print(basename3)
@@ -158,13 +175,18 @@ def opt_molcrys(basename, mols, nmols, spg, nstruc=100,
         del ase_struc.calc
         del ase_struc, pyxtal_struc
 
-    diffmatfile = 'diffmat_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
-    struclistfile = 'strulist_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
-    compare_crys(infmt='cif', refstrucfile=refstrucfile, comparison=strucdiff_method.upper(),
-                 diffmatfile=diffmatfile, struclistfile=struclistfile,
-                 verbose=verbose)
+    # Compare crystal structure similarity
+    if strucdiff_method.upper() in ['POWDER', 'RDF', 'AMD']:
+        diffmatfile = '{}_diffmat_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+        struclistfile = '{}_strulist_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+        clustercsvfile = '{}_cluster_profile_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+        clusterpngfile = '{}_cluster_profile_nstruc{:06}-{:06}.png'.format(basename2, istruc_bgn, istruc_end - 1)
+        compare_crys(infmt='cif', refstrucfile=refstrucfile, comparison=strucdiff_method.upper(),
+                     cluster_cutoff=cluster_cutoff, diffmatfile=diffmatfile, struclistfile=struclistfile,
+                     clustercsvfile=clustercsvfile,
+                     clusterpngfile=clusterpngfile, verbose=verbose)
 
-    outfile = 'summary_{}_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
+    outfile = '{}_summar_nstruc{:06}-{:06}.csv'.format(basename2, istruc_bgn, istruc_end - 1)
     df['ID'] = df['ID'].astype('int')
     df.to_csv(outfile, float_format='%.3f')
 

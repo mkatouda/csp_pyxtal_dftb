@@ -310,7 +310,8 @@ def gen_random_molcrys(basename, mols, nmols, spg, nstruc=100,
                        factor=1.0, t_factor=1.0, use_hall=False,
                        nstruc_try=500, istruc_bgn=1, istruc_end=100,
                        nxyz=[1, 1, 1], ff='gaff2', charge_model='bcc',
-                       strucdiff_method='POWDER', verbose=False):
+                       strucdiff_method='POWDER', cluster_cutoff=0.5,
+                       verbose=False):
 
     cwdir = os.getcwd()
     print('Current working directory: {}'.format(cwdir))
@@ -413,9 +414,16 @@ def gen_random_molcrys(basename, mols, nmols, spg, nstruc=100,
 
     # Compare crystal structure similarity
     if strucdiff_method.upper() in ['POWDER', 'RDF', 'AMD']:
-        compare_crys(infmt='cif', refstrucfile=None, comparison=strucdiff_method.upper(),
-                     diffmatfile='diffmat.csv', struclistfile='struclist.csv',
-                     verbose=verbose)
+        basename1 = '{}_spg{}_factor{:.2f}_tfactor{:.2f}'.format(basename, spg, factor, t_factor)
+        diffmatfile = basename1 + '_diffmat.csv'
+        struclistfile = basename1 + '_struclist.csv'
+        clustercsvfile = basename1 + '_cluster_profile.csv'
+        clusterpngfile = basename1 + '_cluster_profile.png'
+        compare_crys(infmt='cif', refstrucfile=None,
+                     comparison=strucdiff_method.upper(), cluster_cutoff=cluster_cutoff,
+                     diffmatfile=diffmatfile, struclistfile=struclistfile,
+                     clustercsvfile=clustercsvfile,
+                     clusterpngfile=clusterpngfile, verbose=verbose)
 
     os.chdir(cwdir)
     t2 = time()
@@ -453,7 +461,8 @@ def set_default_config(conf):
     conf.setdefault('ff', 'gaff2')
     conf.setdefault('charge_model', 'bcc')
 
-    strucdiff_method('strucdiff_method', 'POWDER')
+    conf.setdefault('strucdiff_method', 'POWDER')
+    conf.setdefault('cluster_cutoff', 0.5)
 
     conf.setdefault('verbose', True)
 
@@ -490,6 +499,7 @@ def main():
     charge_model = conf['charge_model']
 
     strucdiff_method = conf['strucdiff_method']
+    cluster_cutoff = conf['cluster_cutoff']
 
     verbose = conf['verbose']
 
@@ -497,7 +507,7 @@ def main():
                        nstruc, factor, t_factor, use_hall,
                        nstruc_try, istruc_bgn, istruc_end,
                        nxyz, ff, charge_model,
-                       strucdiff_method, verbose)
+                       strucdiff_method, cluster_cutoff, verbose)
                        
 
 if __name__ == '__main__':

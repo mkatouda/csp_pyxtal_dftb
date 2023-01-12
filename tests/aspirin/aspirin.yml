@@ -2,19 +2,24 @@ basename: 'aspirin'
 mols : ['./aspirin.xyz']
 nmols: [4]
 spg: 14
-nstruc: 20
+
+nstruc: 100
 factor: 1.3
 tfactor: 1.5
+nxyz: [1, 1, 1]
+cluster_cutoff: 0.5
 
 gen_crys: True
-verbose: True
+charge_model: 'bcc'
 
-opt_geom: True
+opt_crys: True
+use_cluster_input: True
 sim_method: 'xtb'
 kpts: [2, 2, 2]
-
 opt_maxsteps: 20
 opt_method: 'LBFGS'
 free_energy: False
 
 dftb_command: 'dftb+ > PREFIX.out'
+
+verbose: True

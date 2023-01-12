@@ -74,6 +74,8 @@ def set_default_config(conf):
 
     conf.setdefault('strucdiff_method', 'POWDER')
     conf.setdefault('refstrucfile', None)
+    conf.setdefault('cluster_cutoff', 0.5)
+    conf.setdefault('use_cluster_input', False)
 
     if os.getenv('AMBERHOME') is None:
         dftb_prefix = '~/slko/3ob-3-1/'
@@ -140,6 +142,9 @@ def csp_pyxtal_main(conf):
 
     strucdiff_method = conf['strucdiff_method']
     refstrucfile = conf['refstrucfile']
+    cluster_cutoff = conf['cluster_cutoff']
+
+    use_cluster_input = conf['use_cluster_input']
 
     verbose = conf['verbose']
 
@@ -166,17 +171,17 @@ def csp_pyxtal_main(conf):
                            nstruc, factor, t_factor, use_hall,
                            nstruc_try, istruc_bgn, istruc_end,
                            nxyz, ff, charge_model,
-                           strucdiff_method, verbose)
+                           strucdiff_method, cluster_cutoff, verbose)
 
     if opt_crys:
         opt_molcrys(basename, mols, nmols, spg, nstruc,
                     factor, t_factor, use_hall,
-                    istruc_bgn, istruc_end,
+                    istruc_bgn, istruc_end, use_cluster_input,
                     sim_method, kpts, ps_path,
                     qe_input, cp2k_input, xtb_hamiltonian,
                     opt_method, opt_fmax, 
                     opt_maxsteps, opt_maxstepsize,
-                    symprec, strucdiff_method, refstrucfile,
+                    symprec, strucdiff_method, refstrucfile, cluster_cutoff,
                     free_energy, verbose)
 
 
